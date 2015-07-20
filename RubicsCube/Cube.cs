@@ -6,7 +6,7 @@ namespace RubiksCube
 {
     public enum Axis { X, Y, Z }
     
-    public class Point
+    public class Point : IEquatable<Point>
     {
         public int Value;
 
@@ -40,13 +40,18 @@ namespace RubiksCube
             this[a2] = tmp;
         }
 
+        public bool Equals(Point other)
+        {
+            return Value.Equals(other.Value);
+        }
+
         public override string ToString()
         {
             return String.Format("{0} {1} {2}", this[Axis.X]?1:0, this[Axis.Y]?1:0, this[Axis.Z]?1:0);
         }
     }
 
-    public class Cubelet
+    public class Cubelet : IEquatable<Cubelet>
     {
         public Cubelet(Point p, int xy, int yz, int xz)
         {
@@ -85,6 +90,11 @@ namespace RubiksCube
             this[a, a2] = tmp;
             
             Location.Transform(a1, a2);
+        }
+
+        public bool Equals(Cubelet other)
+        {
+            return Value.Equals(other.Value) && Location.Equals(other.Location);
         }
 
         public override string ToString()

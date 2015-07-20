@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
+
 
 namespace RubiksCube
 {
@@ -25,6 +21,7 @@ namespace RubiksCube
             do
             {
                 Console.WriteLine(cube);
+                Console.WriteLine("Is finished : {0}", cube.IsFinished());
                 s = Console.ReadLine();
                 Console.Clear();
 
