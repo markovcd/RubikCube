@@ -9,15 +9,37 @@ namespace RubiksCube
 {
     class Program
     {
-       
+        static Axis ToAxis(char c)
+        {
+            if (c == 'x') return Axis.X;
+            if (c == 'y') return Axis.Y;
+            if (c == 'z') return Axis.Z;
+
+            throw new Exception();
+        }
+
         static void Main(string[] args)
         {
             var cube = new Cube();
-            var a = cube.GetFace(Axis.X, Axis.Y, false);
-            cube.RotateFace(Axis.X, Axis.Z, false);
-            var f = cube.GetFace(Axis.X, Axis.Y, false);
-            cube.RotateFace(Axis.X, Axis.Y, false);
-            var g = cube.GetFace(Axis.X, Axis.Y, false);
+            var s = "";
+            do
+            {
+                Console.WriteLine(cube);
+                s = Console.ReadLine();
+                Console.Clear();
+
+                if (s != "")
+                {
+                    var cmd = s.Split();
+                    bool side = Convert.ToBoolean(int.Parse(cmd[1]));
+                    var a1 = ToAxis(cmd[0][0]);
+                    var a2 = ToAxis(cmd[0][1]);
+
+                    cube.Transform(a1, a2, side);
+
+                }
+            } while (s != "");
+            
         }
     }
 }

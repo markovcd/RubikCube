@@ -164,5 +164,27 @@ namespace RubiksCube
             Transform(a1, a2, false);
             Transform(a1, a2, true);
         }
+
+        public override string ToString()
+        {
+            var sides = new string[6, 2];
+            int i = 0;
+            for (int a1 = 0; a1 < 2; a1++)
+                for (int a2 = a1 + 1; a2 < 3; a2++)
+                {
+                    bool b = false;
+                    do
+                    {
+                        var s = GetFace((Axis)a1, (Axis)a2, b);
+                        sides[i, 0] = s[0, 0].ToString() + s[0, 1];
+                        sides[i++, 1] = s[1, 0].ToString() + s[1, 1];
+                        b = !b;
+                    } while (b);
+                }
+
+            return String.Format("   {8}\r\n   {9}\r\n\r\n{4} {0} {6} {2}\r\n{5} {1} {7} {3}\r\n\r\n   {10}\r\n   {11}",
+                sides[0, 0], sides[0, 1], sides[1, 0], sides[1, 1], sides[2, 0], sides[2, 1], 
+                sides[3, 0], sides[3, 1], sides[4, 0], sides[4, 1], sides[5, 0], sides[5, 1]);
+        }
     }
 }
