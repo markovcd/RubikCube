@@ -21,23 +21,30 @@ namespace RubiksCube
         static void Main(string[] args)
         {
             var cube = new Cube();
-            var s = "";
+            string s;
             do
             {
                 Console.WriteLine(cube);
                 s = Console.ReadLine();
                 Console.Clear();
 
-                if (s != "")
+                if (s == "") continue;
+
+                var cmd = s.Split();
+                
+                var a1 = ToAxis(cmd[0][0]);
+                var a2 = ToAxis(cmd[0][1]);
+                if (cmd.Length == 1)
                 {
-                    var cmd = s.Split();
-                    bool side = Convert.ToBoolean(int.Parse(cmd[1]));
-                    var a1 = ToAxis(cmd[0][0]);
-                    var a2 = ToAxis(cmd[0][1]);
-
-                    cube.Transform(a1, a2, side);
-
+                    cube.Transform(a1, a2);
                 }
+                else
+                {
+                    bool side = Convert.ToBoolean(int.Parse(cmd[1]));
+                    cube.Transform(a1, a2, side);
+                }
+
+                
             } while (s != "");
             
         }
