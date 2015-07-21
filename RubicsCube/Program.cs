@@ -16,7 +16,7 @@ namespace RubiksCube
 
         static void Main(string[] args)
         {
-            var cube = new Cube();
+            var cube = Cube.Create();
             string s;
             do
             {
@@ -28,7 +28,7 @@ namespace RubiksCube
                 if (s == "") continue;
 
                 var cmd = s.Split();
-                
+
                 var a1 = ToAxis(cmd[0][0]);
                 var a2 = ToAxis(cmd[0][1]);
                 if (cmd.Length == 1)
@@ -41,9 +41,9 @@ namespace RubiksCube
                     cube.Transform(a1, a2, side);
                 }
 
-                
+
             } while (s != "");
-            
+
         }
     }
 }
