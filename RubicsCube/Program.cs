@@ -22,10 +22,26 @@ namespace RubiksCube
             {
                 Console.WriteLine(cube);
                 Console.WriteLine("Is finished : {0}", cube.IsFinished());
-                s = Console.ReadLine();
+
+                var k = Console.ReadKey();
+                if (k.Modifiers == ConsoleModifiers.Control)
+                {
+                    if (k.Key == ConsoleKey.RightArrow) cube.Transform(Axis.Y, Axis.X, false);
+                    if (k.Key == ConsoleKey.LeftArrow) cube.Transform(Axis.X, Axis.Y, false);
+                    if (k.Key == ConsoleKey.UpArrow) cube.Transform(Axis.Z, Axis.X);
+                    if (k.Key == ConsoleKey.DownArrow) cube.Transform(Axis.X, Axis.Z);
+                }
+                else
+                {
+                    if (k.Key == ConsoleKey.RightArrow) cube.Transform(Axis.Y, Axis.Z, false);
+                    if (k.Key == ConsoleKey.LeftArrow) cube.Transform(Axis.Z, Axis.Y, false);
+                    if (k.Key == ConsoleKey.UpArrow) cube.Transform(Axis.Z, Axis.X, false);
+                    if (k.Key == ConsoleKey.DownArrow) cube.Transform(Axis.X, Axis.Z, false);
+                }
+                //s = Console.ReadLine();
                 Console.Clear();
 
-                if (s == "") continue;
+                /*if (s == "") continue;
 
                 var cmd = s.Split();
 
@@ -39,10 +55,10 @@ namespace RubiksCube
                 {
                     bool side = Convert.ToBoolean(int.Parse(cmd[1]));
                     cube.Transform(a1, a2, side);
-                }
+                }*/
 
 
-            } while (s != "");
+            } while (/*s != ""*/true);
 
         }
     }

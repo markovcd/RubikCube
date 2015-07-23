@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace RubiksCube
 {
@@ -171,18 +172,16 @@ namespace RubiksCube
             return Cubelets.Where(c => c.Location[a] == side);
         }
 
-        public int[,] GetFace(Axis a1, Axis a2, bool side)
+        public int[,] GetFace(Axis a1, Axis a2, bool side, bool flip1 = false, bool flip2 = false)
         {
             var result = new int[2, 2];
 
             foreach (var c in GetSide(a1, a2, side))
             {
-                int i = c.Location[a1] ? 1 : 0;
-                int j = c.Location[a2] ? 1 : 0;
-                if (a1 == Axis.Y)
-                    result[j, i] = c[a1, a2];
-                else
-                    result[i, j] = c[a1, a2];
+                int i = c.Location[a1]^flip1 ? 1 : 0;
+                int j = c.Location[a2]^flip2 ? 1 : 0;
+
+                result[i, j] = c[a1, a2];
             }
 
             return result;
@@ -238,8 +237,10 @@ namespace RubiksCube
             throw new NotImplementedException();
         }
 
-        public override string ToString()
+        /*public override string ToString()
         {
+            //return ToString(Axis.X, Axis.Y, false);
+
             var sides = new string[6, 2];
             int i = 0;
             for (int a1 = 0; a1 < 2; a1++)
@@ -255,9 +256,46 @@ namespace RubiksCube
                     } while (b);
                 }
 
-            return String.Format("   {8}\r\n   {9}\r\n\r\n{4} {0} {6} {2}\r\n{5} {1} {7} {3}\r\n\r\n   {10}\r\n   {11}",
+            return string.Format("   {8}\r\n   {9}\r\n\r\n{4} {0} {6} {2}\r\n{5} {1} {7} {3}\r\n\r\n   {10}\r\n   {11}",
                 sides[0, 0], sides[0, 1], sides[1, 0], sides[1, 1], sides[2, 0], sides[2, 1],
                 sides[3, 0], sides[3, 1], sides[4, 0], sides[4, 1], sides[5, 0], sides[5, 1]);
+        }*/
+
+        public override string ToString()
+        {
+            var xy = new string[2, 2];
+            var xz = new string[2, 2];
+            var zy = new string[2, 2];
+
+            bool b = false;
+            do
+            {
+                var f = GetFace(Axis.X, Axis.Y, b, false, b);
+                xy[b ? 1 : 0, 0] = f[0, 0].ToString() + f[0, 1];
+                xy[b ? 1 : 0, 1] = f[1, 0].ToString() + f[1, 1];
+
+                f = GetFace(Axis.X, Axis.Z, b, false, !b);
+                xz[b ? 1 : 0, 0] = f[0, 0].ToString() + f[0, 1];
+                xz[b ? 1 : 0, 1] = f[1, 0].ToString() + f[1, 1];
+
+                f = GetFace(Axis.Z, Axis.Y, b, !b, false);
+                zy[b ? 1 : 0, 0] = f[0, 0].ToString() + f[0, 1];
+                zy[b ? 1 : 0, 1] = f[1, 0].ToString() + f[1, 1];
+
+                b = !b;
+            } while (b);
+
+            var s = new StringBuilder();
+            s.AppendLine("   " + zy[0, 0]);
+            s.AppendLine("   " + zy[0, 1]);
+
+            s.AppendLine(xz[0, 0] + " " + xy[0, 0] + " " + xz[1, 0] + " " + xy[1, 0]);
+            s.AppendLine(xz[0, 1] + " " + xy[0, 1] + " " + xz[1, 1] + " " + xy[1, 1]);
+
+            s.AppendLine("   " + zy[1, 0]);
+            s.AppendLine("   " + zy[1, 1]);
+
+            return s.ToString();
         }
     }
 }
