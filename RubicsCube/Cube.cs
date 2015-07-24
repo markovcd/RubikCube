@@ -55,11 +55,16 @@ namespace RubiksCube
             return Value.Equals(other.Value);
         }
 
+        public override int GetHashCode()
+        {
+            return Value.GetHashCode();
+        }
+
         public override string ToString()
         {
-            return String.Format("{0} {1} {2}", this[Axis.X] ? 1 : 0, this[Axis.Y] ? 1 : 0, this[Axis.Z] ? 1 : 0);
+            return string.Format("{0} {1} {2}", this[Axis.X] ? 1 : 0, this[Axis.Y] ? 1 : 0, this[Axis.Z] ? 1 : 0);
         }
-    }
+    } 
 
     public class Cubelet : IEquatable<Cubelet>
     {
@@ -118,6 +123,17 @@ namespace RubiksCube
             return Value.Equals(other.Value) && Location.Equals(other.Location);
         }
 
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = 17;
+                hash = hash * 23 + Location.GetHashCode();
+                hash = hash * 23 + Value.GetHashCode();
+                return hash;
+            }
+        }
+
         public override string ToString()
         {
             return String.Format("L {0} XY {1} XZ {2} YZ {3}", Location,
@@ -125,9 +141,10 @@ namespace RubiksCube
         }
     }
 
-    public class Cube : IEquatable<Cube>
+    public class Cube : IEquatable<Cube>, INode<Cube>
     {
         public IList<Cubelet> Cubelets { get; private set; }
+        public Cube Parent { get; set; }
 
         public static Cube Create()
         {
@@ -157,9 +174,12 @@ namespace RubiksCube
                     {
                         var cube = Clone();
                         cube.Transform((Axis)a1, (Axis)a2, b);
+                        cube.Parent = this;
                         yield return cube;
+
                         cube = Clone();
                         cube.Transform((Axis)a2, (Axis)a1, b);
+                        cube.Parent = this;
                         yield return cube;
                         b = !b;
                     } while (b);
@@ -232,34 +252,48 @@ namespace RubiksCube
             return cube;
         }
 
-        public bool Equals(Cube other)
+        private IEnumerable<Tuple<Axis, Axis, bool>> Moves()
         {
-            throw new NotImplementedException();
+            for (int a1 = 0; a1 < 3; a1++)
+                for (int a2 = 0; a2 < 3; a2++)
+                {
+                    if (a1 == a2) continue;
+                    yield return Tuple.Create((Axis)a1, (Axis)a2, false);
+                    yield return Tuple.Create((Axis)a1, (Axis)a2, true);
+                }
         }
 
-        /*public override string ToString()
+        public void Scramble(int steps = 10)
         {
-            //return ToString(Axis.X, Axis.Y, false);
+            var random = new Random();
 
-            var sides = new string[6, 2];
-            int i = 0;
-            for (int a1 = 0; a1 < 2; a1++)
-                for (int a2 = a1 + 1; a2 < 3; a2++)
-                {
-                    bool b = false;
-                    do
-                    {
-                        var s = GetFace((Axis)a1, (Axis)a2, b);
-                        sides[i, 0] = s[0, 0].ToString() + s[0, 1];
-                        sides[i++, 1] = s[1, 0].ToString() + s[1, 1];
-                        b = !b;
-                    } while (b);
-                }
+            var moves = Moves().ToList();
 
-            return string.Format("   {8}\r\n   {9}\r\n\r\n{4} {0} {6} {2}\r\n{5} {1} {7} {3}\r\n\r\n   {10}\r\n   {11}",
-                sides[0, 0], sides[0, 1], sides[1, 0], sides[1, 1], sides[2, 0], sides[2, 1],
-                sides[3, 0], sides[3, 1], sides[4, 0], sides[4, 1], sides[5, 0], sides[5, 1]);
-        }*/
+            while (steps-- > 0)
+            {
+                var t = moves[random.Next(0, moves.Count)];
+                Transform(t.Item1, t.Item2, t.Item3);
+            }
+
+        }
+
+        public bool Equals(Cube other)
+        {
+            return other.GetHashCode() == GetHashCode();
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = 17;
+
+                foreach (var c in Cubelets)
+                    hash = hash * 23 + c.GetHashCode();
+
+                return hash;
+            }
+        }
 
         public override string ToString()
         {

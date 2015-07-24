@@ -7,8 +7,8 @@
     <ProjectGuid>{7F35A3C9-50B2-4558-8074-B454CD1C5A89}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>RubicsCube</RootNamespace>
-    <AssemblyName>RubicsCube</AssemblyName>
+    <RootNamespace>RubiksCube</RootNamespace>
+    <AssemblyName>RubiksCube</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -41,6 +41,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BreadthFirstSearch.cs" />
     <Compile Include="Cube.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

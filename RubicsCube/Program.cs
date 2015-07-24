@@ -5,23 +5,19 @@ namespace RubiksCube
 {
     class Program
     {
-        static Axis ToAxis(char c)
-        {
-            if (c == 'x') return Axis.X;
-            if (c == 'y') return Axis.Y;
-            if (c == 'z') return Axis.Z;
-
-            throw new Exception();
-        }
-
-        static void Main(string[] args)
+        static void CubeInteface()
         {
             var cube = Cube.Create();
-            string s;
+            Console.Write("Scramble? y/n: ");
+            if (Console.ReadLine().ToLower() == "y")
+                cube.Scramble(100);
+
             do
             {
+                Console.Clear();
                 Console.WriteLine(cube);
                 Console.WriteLine("Is finished : {0}", cube.IsFinished());
+                Console.WriteLine("Hash code : {0}", cube.GetHashCode());
 
                 var k = Console.ReadKey();
                 if (k.Modifiers == ConsoleModifiers.Control)
@@ -37,29 +33,29 @@ namespace RubiksCube
                     if (k.Key == ConsoleKey.LeftArrow) cube.Transform(Axis.Z, Axis.Y, false);
                     if (k.Key == ConsoleKey.UpArrow) cube.Transform(Axis.Z, Axis.X, false);
                     if (k.Key == ConsoleKey.DownArrow) cube.Transform(Axis.X, Axis.Z, false);
-                }
-                //s = Console.ReadLine();
-                Console.Clear();
+                } 
+            } while (true);
+        }
 
-                /*if (s == "") continue;
+        public static void BfsInterface()
+        {
+            var cube = Cube.Create();
+            cube.Scramble(100);
+            var bfs = new BreadthFirstSearch<Cube>();
+            var found = bfs.Find(cube, c => c.IsFinished());
+            Console.WriteLine(cube);
+            Console.WriteLine();
+            Console.WriteLine("Can be solved after {0} moves.", bfs.GetDepth(found));
+        }
 
-                var cmd = s.Split();
+        static void Main(string[] args)
+        {
+            Console.Write("Launch BFS? y/n: ");
 
-                var a1 = ToAxis(cmd[0][0]);
-                var a2 = ToAxis(cmd[0][1]);
-                if (cmd.Length == 1)
-                {
-                    cube.Transform(a1, a2);
-                }
-                else
-                {
-                    bool side = Convert.ToBoolean(int.Parse(cmd[1]));
-                    cube.Transform(a1, a2, side);
-                }*/
-
-
-            } while (/*s != ""*/true);
-
+            if (Console.ReadLine() == "y")
+                BfsInterface();
+            else
+                CubeInteface();
         }
     }
 }
