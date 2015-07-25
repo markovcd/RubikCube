@@ -42,14 +42,9 @@ namespace RubiksCube
             while (true)
             {
                 var cube = Cube.Create();
-                cube.Scramble(25);
-                //var bfs = new BreadthFirstSearch<Cube>();
-                //var found = bfs.Find(cube, c => c.IsFinished());
-                var found = BreadthFirstSearch.Find(cube, 
-                     c     => c.Next(), 
-                     c     => c.IsFinished(), 
-                     c     => c.Steps,
-                    (c, i) => c.Steps = i);
+                cube.Scramble();
+                var bfs = new BreadthFirstSearch<Cube>();
+                var found = bfs.Find(cube, c => c.IsFinished());
 
                 Console.WriteLine(cube);
                 Console.WriteLine();
