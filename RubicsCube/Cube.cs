@@ -9,7 +9,7 @@ namespace RubiksCube
 
     public class Point : IEquatable<Point>
     {
-        public int Value;
+        public int Value { get; private set; }
 
         public bool this[Axis a]
         {
@@ -26,13 +26,6 @@ namespace RubiksCube
             }
         }
 
-        public Point(bool x, bool y, bool z)
-        {
-            this[Axis.X] = x;
-            this[Axis.Y] = y;
-            this[Axis.Z] = z;
-        }
-
         public Point(int value)
         {
             Value = value;
@@ -45,24 +38,15 @@ namespace RubiksCube
             this[a2] = tmp;
         }
 
-        public Point Clone()
-        {
-            return new Point(Value);
-        }
+        public Point Clone() => new Point(Value);
 
-        public bool Equals(Point other)
-        {
-            return Value.Equals(other.Value);
-        }
+        public bool Equals(Point other) => Value.Equals(other.Value);
 
-        public override int GetHashCode()
-        {
-            return Value.GetHashCode();
-        }
+        public override int GetHashCode() => Value.GetHashCode();
 
         public override string ToString()
         {
-            return string.Format("{0} {1} {2}", this[Axis.X] ? 1 : 0, this[Axis.Y] ? 1 : 0, this[Axis.Z] ? 1 : 0);
+            return $"{(this[Axis.X] ? 1 : 0)} {(this[Axis.Y] ? 1 : 0)} {(this[Axis.Z] ? 1 : 0)}";
         }
     } 
 
@@ -84,7 +68,7 @@ namespace RubiksCube
 
         public int Value;
 
-        public Point Location { get; set; }
+        public Point Location { get; }
 
         public int this[Axis a1, Axis a2]
         {
@@ -113,10 +97,7 @@ namespace RubiksCube
             Location.Transform(a1, a2);
         }
 
-        public Cubelet Clone()
-        {
-            return new Cubelet(Location.Clone(), Value);
-        }
+        public Cubelet Clone() => new Cubelet(Location.Clone(), Value);
 
         public bool Equals(Cubelet other)
         {
@@ -136,15 +117,14 @@ namespace RubiksCube
 
         public override string ToString()
         {
-            return String.Format("L {0} XY {1} XZ {2} YZ {3}", Location,
-                this[Axis.X, Axis.Y], this[Axis.X, Axis.Z], this[Axis.Y, Axis.Z]);
+            return $"L {Location} XY {this[Axis.X, Axis.Y]} XZ {this[Axis.X, Axis.Z]} YZ {this[Axis.Y, Axis.Z]}";
         }
     }
 
     public class Cube : IEquatable<Cube>, INode<Cube>
     {
-        public IList<Cubelet> Cubelets { get; private set; }
-        public Cube Parent { get; set; }
+        public IList<Cubelet> Cubelets { get; }
+        public int Steps { get; set; }
 
         public static Cube Create()
         {
@@ -174,12 +154,10 @@ namespace RubiksCube
                     {
                         var cube = Clone();
                         cube.Transform((Axis)a1, (Axis)a2, b);
-                        cube.Parent = this;
                         yield return cube;
 
                         cube = Clone();
                         cube.Transform((Axis)a2, (Axis)a1, b);
-                        cube.Parent = this;
                         yield return cube;
                         b = !b;
                     } while (b);
@@ -252,7 +230,7 @@ namespace RubiksCube
             return cube;
         }
 
-        private IEnumerable<Tuple<Axis, Axis, bool>> Moves()
+        private static IEnumerable<Tuple<Axis, Axis, bool>> Moves()
         {
             for (int a1 = 0; a1 < 3; a1++)
                 for (int a2 = 0; a2 < 3; a2++)
@@ -286,12 +264,7 @@ namespace RubiksCube
         {
             unchecked
             {
-                int hash = 17;
-
-                foreach (var c in Cubelets)
-                    hash = hash * 23 + c.GetHashCode();
-
-                return hash;
+                return Cubelets.Aggregate(17, (current, c) => current*23 + c.GetHashCode());
             }
         }
 
@@ -312,7 +285,7 @@ namespace RubiksCube
                 xz[b ? 1 : 0, 0] = f[0, 0].ToString() + f[0, 1];
                 xz[b ? 1 : 0, 1] = f[1, 0].ToString() + f[1, 1];
 
-                f = GetFace(Axis.Z, Axis.Y, b, !b, false);
+                f = GetFace(Axis.Z, Axis.Y, b, !b);
                 zy[b ? 1 : 0, 0] = f[0, 0].ToString() + f[0, 1];
                 zy[b ? 1 : 0, 1] = f[1, 0].ToString() + f[1, 1];
 

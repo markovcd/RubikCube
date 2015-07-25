@@ -39,13 +39,23 @@ namespace RubiksCube
 
         public static void BfsInterface()
         {
-            var cube = Cube.Create();
-            cube.Scramble(100);
-            var bfs = new BreadthFirstSearch<Cube>();
-            var found = bfs.Find(cube, c => c.IsFinished());
-            Console.WriteLine(cube);
-            Console.WriteLine();
-            Console.WriteLine("Can be solved after {0} moves.", bfs.GetDepth(found));
+            while (true)
+            {
+                var cube = Cube.Create();
+                cube.Scramble(25);
+                //var bfs = new BreadthFirstSearch<Cube>();
+                //var found = bfs.Find(cube, c => c.IsFinished());
+                var found = BreadthFirstSearch.Find(cube, 
+                     c     => c.Next(), 
+                     c     => c.IsFinished(), 
+                     c     => c.Steps,
+                    (c, i) => c.Steps = i);
+
+                Console.WriteLine(cube);
+                Console.WriteLine();
+                Console.WriteLine("Can be solved after {0} moves.", found.Steps);
+                Console.ReadLine();
+            }
         }
 
         static void Main(string[] args)
