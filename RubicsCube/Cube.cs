@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -54,11 +55,9 @@ namespace RubiksCube
 
         public override int GetHashCode() => Value.GetHashCode();
 
-        public override string ToString()
-        {
-            return $"{(this[Axis.X] ? 1 : 0)} {(this[Axis.Y] ? 1 : 0)} {(this[Axis.Z] ? 1 : 0)}";
-        }
-    } 
+        public override string ToString() =>
+            $"{(this[Axis.X] ? 1 : 0)} {(this[Axis.Y] ? 1 : 0)} {(this[Axis.Z] ? 1 : 0)}";
+    }
 
     public struct Cubelet : IEquatable<Cubelet>
     {
@@ -69,7 +68,7 @@ namespace RubiksCube
             SetFace(ref value, Axis.X, Axis.Y, xy);
             SetFace(ref value, Axis.X, Axis.Z, xz);
             SetFace(ref value, Axis.Y, Axis.Z, yz);
-        
+
             Location = location;
             Value = value;
         }
@@ -77,6 +76,18 @@ namespace RubiksCube
         public Cubelet(Point location, int value)
         {
             Location = location;
+            Value = value;
+        }
+
+        public Cubelet(int index)
+        {
+            Location = new Point(index);
+            int value = 0;
+
+            SetFace(ref value, Axis.X, Axis.Y, Location[Axis.Z] ? 2 : 1);
+            SetFace(ref value, Axis.X, Axis.Z, Location[Axis.Y] ? 4 : 3);
+            SetFace(ref value, Axis.Y, Axis.Z, Location[Axis.X] ? 6 : 5);
+
             Value = value;
         }
 
@@ -112,10 +123,8 @@ namespace RubiksCube
             return new Cubelet(Location.Transform(a1, a2), value);
         }
 
-        public bool Equals(Cubelet other)
-        {
-            return Value.Equals(other.Value) && Location.Equals(other.Location);
-        }
+        public bool Equals(Cubelet other) =>
+            Value.Equals(other.Value) && Location.Equals(other.Location);
 
         public override int GetHashCode()
         {
@@ -128,24 +137,24 @@ namespace RubiksCube
             }
         }
 
-        public override string ToString()
-        {
-            return $"L {Location} XY {this[Axis.X, Axis.Y]} XZ {this[Axis.X, Axis.Z]} YZ {this[Axis.Y, Axis.Z]}";
-        }
+        public override string ToString() =>
+            $"L {Location} XY {this[Axis.X, Axis.Y]} XZ {this[Axis.X, Axis.Z]} YZ {this[Axis.Y, Axis.Z]}";
     }
 
-    public class CubeletList : List<Cubelet>
+    public class Cubelets : IEnumerable<Cubelet>
     {
-        public IEnumerable<Cubelet> Transform(Axis a1, Axis a2, bool side)
+        private readonly IList<Cubelet> cubelets;
+
+        public IEnumerable<Cubelet> Transform(Axis a1, Axis a2, bool? side = null)
         {
             var a = (Axis)(3 - (int)a1 - (int)a2);
-            return this.Select(c => c.Location[a] == side ? c.Transform(a1, a2) : c);
+            return cubelets.Select(c => !side.HasValue || c.Location[a] == side ? c.Transform(a1, a2) : c);
         }
 
         public IEnumerable<Cubelet> GetSide(Axis a1, Axis a2, bool side)
         {
             var a = (Axis)(3 - (int)a1 - (int)a2);
-            return this.Where(c => c.Location[a] == side);
+            return cubelets.Where(c => c.Location[a] == side);
         }
 
         private static IEnumerable<Tuple<Axis, Axis, bool>> Moves()
@@ -158,14 +167,18 @@ namespace RubiksCube
                     yield return Tuple.Create((Axis)a1, (Axis)a2, true);
                 }
         }
-  
-        public CubeletList(int randomize = 0)
+
+        public Cubelets(IEnumerable<Cubelet> cubelets)
         {
+            this.cubelets = cubelets.ToArray();
+        }
+
+        public Cubelets(int randomize = 0)
+        {
+            cubelets = new Cubelet[8];
+
             for (int i = 0; i < 8; i++)
-            {
-                var p = new Point(i);
-                Add(new Cubelet(p, p[Axis.Z] ? 2 : 1, p[Axis.X] ? 4 : 3, p[Axis.Y] ? 6 : 5));
-            }
+                cubelets[i] = new Cubelet(i);
 
             var random = new Random();
             var moves = Moves().ToList();
@@ -173,71 +186,52 @@ namespace RubiksCube
             while (randomize-- > 0)
             {
                 var t = moves[random.Next(0, moves.Count)];
-                var l = Transform(t.Item1, t.Item2, t.Item3);
-                Clear();
-                AddRange(l);
+                int i = 0;
+                foreach (var c in Transform(t.Item1, t.Item2, t.Item3))
+                    cubelets[i++] = c;
             }
         }
+
+        public IEnumerator<Cubelet> GetEnumerator() => cubelets.GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();        
     }
 
     public class Cube : IEquatable<Cube>, INode<Cube>
     {
-
-        public IList<Cubelet> Cubelets { get; }
+        public Cubelets Cubelets { get; }
         public int Steps { get; set; }
 
-        public static Cube Create()
+        public Cube(int randomize = 0)
         {
-            var cube = new Cube();
-
-            for (int i = 0; i < 8; i++)
-            {
-                var p = new Point(i);
-                cube.Cubelets.Add(new Cubelet(p, p[Axis.Z] ? 2 : 1, p[Axis.X] ? 4 : 3, p[Axis.Y] ? 6 : 5));
-            }
-
-            return cube;
+            Cubelets = new Cubelets(randomize);
         }
 
-        public Cube()
+        private Cube(IEnumerable<Cubelet> cubelets)
         {
-            Cubelets = new List<Cubelet>();
+            Cubelets = new Cubelets(cubelets);
         }
 
         public IEnumerable<Cube> Next()
         {
-            for (int a1 = 0; a1 < 2; a1++)
-                for (int a2 = a1 + 1; a2 < 3; a2++)
+            for (int a1 = 0; a1 < 3; a1++)
+                for (int a2 = 0; a2 < 3; a2++)
                 {
-                    bool b = false;
-                    do
-                    {
-                        var cube = Clone();
-                        cube.Transform((Axis)a1, (Axis)a2, b);
-                        yield return cube;
+                    if (a1 == a2) continue;
 
-                        cube = Clone();
-                        cube.Transform((Axis)a2, (Axis)a1, b);
-                        yield return cube;
-                        b = !b;
-                    } while (b);
+                    yield return Transform((Axis)a1, (Axis)a2, false);
+                    yield return Transform((Axis)a1, (Axis)a2, true);
                 }
-        }
-
-        public IEnumerable<Cubelet> GetSide(Axis a1, Axis a2, bool side)
-        {
-            var a = (Axis)(3 - (int)a1 - (int)a2);
-            return Cubelets.Where(c => c.Location[a] == side);
         }
 
         public int[,] GetFace(Axis a1, Axis a2, bool side, bool flip1 = false, bool flip2 = false)
         {
             var result = new int[2, 2];
 
-            foreach (var c in GetSide(a1, a2, side))
+            foreach (var c in Cubelets.GetSide(a1, a2, side))
             {
-                int i = c.Location[a1]^flip1 ? 1 : 0;
-                int j = c.Location[a2]^flip2 ? 1 : 0;
+                int i = c.Location[a1] ^ flip1 ? 1 : 0;
+                int j = c.Location[a2] ^ flip2 ? 1 : 0;
 
                 result[i, j] = c[a1, a2];
             }
@@ -245,7 +239,7 @@ namespace RubiksCube
             return result;
         }
 
-        public bool IsFinished(Axis a1, Axis a2, bool side)
+        private bool IsFinished(Axis a1, Axis a2, bool side)
         {
             int? j = null;
             foreach (var i in GetFace(a1, a2, side))
@@ -270,50 +264,8 @@ namespace RubiksCube
             return b;
         }
 
-        public Cube Transform(Axis a1, Axis a2, bool side)
-        {
-            GetSide(a1, a2, side).Select(c => c.Transform(a1, a2));
-        }
-
-        public void Transform(Axis a1, Axis a2)
-        {
-            Cubelets.ToList().ForEach(c => c.Transform(a1, a2));
-        }
-
-        public Cube Clone()
-        {
-            var cube = new Cube();
-
-            foreach (var cubelet in Cubelets)
-                cube.Cubelets.Add(cubelet.Clone());
-
-            return cube;
-        }
-
-        private static IEnumerable<Tuple<Axis, Axis, bool>> Moves()
-        {
-            for (int a1 = 0; a1 < 3; a1++)
-                for (int a2 = 0; a2 < 3; a2++)
-                {
-                    if (a1 == a2) continue;
-                    yield return Tuple.Create((Axis)a1, (Axis)a2, false);
-                    yield return Tuple.Create((Axis)a1, (Axis)a2, true);
-                }
-        }
-
-        public void Scramble(int steps = 10)
-        {
-            var random = new Random();
-
-            var moves = Moves().ToList();
-
-            while (steps-- > 0)
-            {
-                var t = moves[random.Next(0, moves.Count)];
-                Transform(t.Item1, t.Item2, t.Item3);
-            }
-
-        }
+        public Cube Transform(Axis a1, Axis a2, bool? side = null) =>
+            new Cube(Cubelets.Transform(a1, a2, side));
 
         public bool Equals(Cube other) => other.GetHashCode() == GetHashCode();
 
@@ -321,7 +273,7 @@ namespace RubiksCube
         {
             unchecked
             {
-                return Cubelets.Aggregate(17, (current, c) => current*23 + c.GetHashCode());
+                return Cubelets.Aggregate(17, (current, c) => current * 23 + c.GetHashCode());
             }
         }
 
@@ -335,16 +287,16 @@ namespace RubiksCube
             do
             {
                 var f = GetFace(Axis.X, Axis.Y, b, false, b);
-                xy[b ? 1 : 0, 0] = f[0, 0].ToString() + f[0, 1];
-                xy[b ? 1 : 0, 1] = f[1, 0].ToString() + f[1, 1];
+                xy[b ? 1 : 0, 0] = $"{f[0, 0]}{f[0, 1]}";
+                xy[b ? 1 : 0, 1] = $"{f[1, 0]}{f[1, 1]}";
 
                 f = GetFace(Axis.X, Axis.Z, b, false, !b);
-                xz[b ? 1 : 0, 0] = f[0, 0].ToString() + f[0, 1];
-                xz[b ? 1 : 0, 1] = f[1, 0].ToString() + f[1, 1];
+                xz[b ? 1 : 0, 0] = $"{f[0, 0]}{f[0, 1]}";
+                xz[b ? 1 : 0, 1] = $"{f[1, 0]}{f[1, 1]}";
 
                 f = GetFace(Axis.Z, Axis.Y, b, !b);
-                zy[b ? 1 : 0, 0] = f[0, 0].ToString() + f[0, 1];
-                zy[b ? 1 : 0, 1] = f[1, 0].ToString() + f[1, 1];
+                zy[b ? 1 : 0, 0] = $"{f[0, 0]}{f[0, 1]}";
+                zy[b ? 1 : 0, 1] = $"{f[1, 0]}{f[1, 1]}";
 
                 b = !b;
             } while (b);
@@ -353,8 +305,8 @@ namespace RubiksCube
             s.AppendLine("   " + zy[0, 0]);
             s.AppendLine("   " + zy[0, 1]);
 
-            s.AppendLine(xz[0, 0] + " " + xy[0, 0] + " " + xz[1, 0] + " " + xy[1, 0]);
-            s.AppendLine(xz[0, 1] + " " + xy[0, 1] + " " + xz[1, 1] + " " + xy[1, 1]);
+            s.AppendLine($"{xz[0, 0]} {xy[0, 0]} {xz[1, 0]} {xy[1, 0]}");
+            s.AppendLine($"{xz[0, 1]} {xy[0, 1]} {xz[1, 1]} {xy[1, 1]}");
 
             s.AppendLine("   " + zy[1, 0]);
             s.AppendLine("   " + zy[1, 1]);
