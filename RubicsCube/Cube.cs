@@ -7,23 +7,24 @@ namespace RubiksCube
 {
     public enum Axis { X, Y, Z }
 
-    public class Point : IEquatable<Point>
+    public struct Point : IEquatable<Point>
     {
-        public int Value { get; private set; }
+        public int Value { get; }
 
         public bool this[Axis a]
         {
             get
             {
-                int p = (int)Math.Pow(2, (int)a);
+                var p = (int)Math.Pow(2, (int)a);
                 return Convert.ToBoolean(Value / p % 2);
             }
-            set
-            {
-                var m = (int)Math.Pow(2, (int)a);
-                Value -= (Value / m) % 2 * m;
-                Value += Convert.ToInt32(value) * m;
-            }
+        }
+
+        private static void SetAxis(ref int value, Axis a, bool axisValue)
+        {
+            var p = (int)Math.Pow(2, (int)a);
+            value -= (value / p) % 2 * p;
+            value += axisValue ? p : 0;
         }
 
         public Point(int value)
@@ -31,14 +32,23 @@ namespace RubiksCube
             Value = value;
         }
 
-        public void Transform(Axis a1, Axis a2)
+        public Point(bool x, bool y, bool z)
         {
-            var tmp = this[a1];
-            this[a1] = !this[a2];
-            this[a2] = tmp;
+            var value = 0;
+            SetAxis(ref value, Axis.X, x);
+            SetAxis(ref value, Axis.Y, y);
+            SetAxis(ref value, Axis.Z, z);
+
+            Value = value;
         }
 
-        public Point Clone() => new Point(Value);
+        public Point Transform(Axis a1, Axis a2)
+        {
+            int value = Value;
+            SetAxis(ref value, a1, !this[a2]);
+            SetAxis(ref value, a2, this[a1]);
+            return new Point(value);
+        }
 
         public bool Equals(Point other) => Value.Equals(other.Value);
 
@@ -50,14 +60,18 @@ namespace RubiksCube
         }
     } 
 
-    public class Cubelet : IEquatable<Cubelet>
+    public struct Cubelet : IEquatable<Cubelet>
     {
         public Cubelet(Point location, int xy, int yz, int xz)
         {
-            this[Axis.X, Axis.Y] = xy;
-            this[Axis.Y, Axis.Z] = yz;
-            this[Axis.X, Axis.Z] = xz;
+            int value = 0;
+
+            SetFace(ref value, Axis.X, Axis.Y, xy);
+            SetFace(ref value, Axis.X, Axis.Z, xz);
+            SetFace(ref value, Axis.Y, Axis.Z, yz);
+        
             Location = location;
+            Value = value;
         }
 
         public Cubelet(Point location, int value)
@@ -66,7 +80,7 @@ namespace RubiksCube
             Value = value;
         }
 
-        public int Value;
+        public int Value { get; }
 
         public Point Location { get; }
 
@@ -74,30 +88,29 @@ namespace RubiksCube
         {
             get
             {
-                int a = (int)a1 + (int)a2 - 1;
+                var a = (int)a1 + (int)a2 - 1;
                 return Value / (int)Math.Pow(10, a) % 10;
-            }
-            set
-            {
-                int a = (int)a1 + (int)a2 - 1;
-                var m = (int)Math.Pow(10, a);
-                Value -= (Value / m) % 10 * m;
-                Value += value * m;
             }
         }
 
-        public void Transform(Axis a1, Axis a2)
+        private static void SetFace(ref int value, Axis a1, Axis a2, int faceValue)
+        {
+            int a = (int)a1 + (int)a2 - 1;
+            var p = (int)Math.Pow(10, a);
+            value -= (value / p) % 10 * p;
+            value += faceValue * p;
+        }
+
+        public Cubelet Transform(Axis a1, Axis a2)
         {
             var a = (Axis)(3 - (int)a1 - (int)a2);
 
-            var tmp = this[a, a1];
-            this[a, a1] = this[a, a2];
-            this[a, a2] = tmp;
+            int value = Value;
+            SetFace(ref value, a, a1, this[a, a2]);
+            SetFace(ref value, a, a2, this[a, a1]);
 
-            Location.Transform(a1, a2);
+            return new Cubelet(Location.Transform(a1, a2), value);
         }
-
-        public Cubelet Clone() => new Cubelet(Location.Clone(), Value);
 
         public bool Equals(Cubelet other)
         {
@@ -121,8 +134,55 @@ namespace RubiksCube
         }
     }
 
+    public class CubeletList : List<Cubelet>
+    {
+        public IEnumerable<Cubelet> Transform(Axis a1, Axis a2, bool side)
+        {
+            var a = (Axis)(3 - (int)a1 - (int)a2);
+            return this.Select(c => c.Location[a] == side ? c.Transform(a1, a2) : c);
+        }
+
+        public IEnumerable<Cubelet> GetSide(Axis a1, Axis a2, bool side)
+        {
+            var a = (Axis)(3 - (int)a1 - (int)a2);
+            return this.Where(c => c.Location[a] == side);
+        }
+
+        private static IEnumerable<Tuple<Axis, Axis, bool>> Moves()
+        {
+            for (int a1 = 0; a1 < 3; a1++)
+                for (int a2 = 0; a2 < 3; a2++)
+                {
+                    if (a1 == a2) continue;
+                    yield return Tuple.Create((Axis)a1, (Axis)a2, false);
+                    yield return Tuple.Create((Axis)a1, (Axis)a2, true);
+                }
+        }
+  
+        public CubeletList(int randomize = 0)
+        {
+            for (int i = 0; i < 8; i++)
+            {
+                var p = new Point(i);
+                Add(new Cubelet(p, p[Axis.Z] ? 2 : 1, p[Axis.X] ? 4 : 3, p[Axis.Y] ? 6 : 5));
+            }
+
+            var random = new Random();
+            var moves = Moves().ToList();
+
+            while (randomize-- > 0)
+            {
+                var t = moves[random.Next(0, moves.Count)];
+                var l = Transform(t.Item1, t.Item2, t.Item3);
+                Clear();
+                AddRange(l);
+            }
+        }
+    }
+
     public class Cube : IEquatable<Cube>, INode<Cube>
     {
+
         public IList<Cubelet> Cubelets { get; }
         public int Steps { get; set; }
 
@@ -210,9 +270,9 @@ namespace RubiksCube
             return b;
         }
 
-        public void Transform(Axis a1, Axis a2, bool side)
+        public Cube Transform(Axis a1, Axis a2, bool side)
         {
-            GetSide(a1, a2, side).ToList().ForEach(c => c.Transform(a1, a2));
+            GetSide(a1, a2, side).Select(c => c.Transform(a1, a2));
         }
 
         public void Transform(Axis a1, Axis a2)
@@ -255,10 +315,7 @@ namespace RubiksCube
 
         }
 
-        public bool Equals(Cube other)
-        {
-            return other.GetHashCode() == GetHashCode();
-        }
+        public bool Equals(Cube other) => other.GetHashCode() == GetHashCode();
 
         public override int GetHashCode()
         {
