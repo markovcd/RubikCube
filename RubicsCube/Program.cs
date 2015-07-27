@@ -38,12 +38,16 @@ namespace RubiksCube
         {
             while (true)
             {
-                var cube = new Cube(100);
+                Console.Write("Shuffles: ");
+                int s = int.Parse(Console.ReadLine());
+
+                var cube = new Cube(s);
+                Console.WriteLine(cube);
 
                 var bfs = new BreadthFirstSearch<Cube>();
                 var found = bfs.Find(cube, c => c.IsFinished());
 
-                Console.WriteLine(cube);
+                
                 Console.WriteLine();
                 Console.WriteLine("Can be solved after {0} moves.", found.Steps);
                 Console.ReadLine();

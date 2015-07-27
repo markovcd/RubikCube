@@ -10,7 +10,7 @@ namespace RubiksCube
 
     public struct Point : IEquatable<Point>
     {
-        public int Value { get; }
+        public byte Value { get; }
 
         public bool this[Axis a]
         {
@@ -21,21 +21,21 @@ namespace RubiksCube
             }
         }
 
-        private static void SetAxis(ref int value, Axis a, bool axisValue)
+        private static void SetAxis(ref byte value, Axis a, bool axisValue)
         {
-            var p = (int)Math.Pow(2, (int)a);
-            value -= (value / p) % 2 * p;
-            value += axisValue ? p : 0;
+            var p = (byte)Math.Pow(2, (byte)a);
+            value -= (byte)((value / p) % 2 * p);
+            value += axisValue ? p : (byte)0;
         }
 
-        public Point(int value)
+        public Point(byte value)
         {
             Value = value;
         }
 
         public Point(bool x, bool y, bool z)
         {
-            var value = 0;
+            byte value = 0;
             SetAxis(ref value, Axis.X, x);
             SetAxis(ref value, Axis.Y, y);
             SetAxis(ref value, Axis.Z, z);
@@ -45,7 +45,7 @@ namespace RubiksCube
 
         public Point Transform(Axis a1, Axis a2)
         {
-            int value = Value;
+            var value = Value;
             SetAxis(ref value, a1, !this[a2]);
             SetAxis(ref value, a2, this[a1]);
             return new Point(value);
@@ -61,9 +61,9 @@ namespace RubiksCube
 
     public struct Cubelet : IEquatable<Cubelet>
     {
-        public Cubelet(Point location, int xy, int yz, int xz)
+        public Cubelet(Point location, byte xy, byte yz, byte xz)
         {
-            int value = 0;
+            short value = 0;
 
             SetFace(ref value, Axis.X, Axis.Y, xy);
             SetFace(ref value, Axis.X, Axis.Z, xz);
@@ -73,50 +73,50 @@ namespace RubiksCube
             Value = value;
         }
 
-        public Cubelet(Point location, int value)
+        public Cubelet(Point location, short value)
         {
             Location = location;
             Value = value;
         }
 
-        public Cubelet(int index)
+        public Cubelet(byte index)
         {
             Location = new Point(index);
-            int value = 0;
+            short value = 0;
 
-            SetFace(ref value, Axis.X, Axis.Y, Location[Axis.Z] ? 2 : 1);
-            SetFace(ref value, Axis.X, Axis.Z, Location[Axis.Y] ? 4 : 3);
-            SetFace(ref value, Axis.Y, Axis.Z, Location[Axis.X] ? 6 : 5);
+            SetFace(ref value, Axis.X, Axis.Y, Location[Axis.Z] ? (byte)2 : (byte)1);
+            SetFace(ref value, Axis.X, Axis.Z, Location[Axis.Y] ? (byte)4 : (byte)3);
+            SetFace(ref value, Axis.Y, Axis.Z, Location[Axis.X] ? (byte)6 : (byte)5);
 
             Value = value;
         }
 
-        public int Value { get; }
+        public short Value { get; }
 
         public Point Location { get; }
 
-        public int this[Axis a1, Axis a2]
+        public byte this[Axis a1, Axis a2]
         {
             get
             {
-                var a = (int)a1 + (int)a2 - 1;
-                return Value / (int)Math.Pow(10, a) % 10;
+                var a = (short)a1 + (short)a2 - 1;
+                return (byte)(Value / (short)Math.Pow(10, a) % 10);
             }
         }
 
-        private static void SetFace(ref int value, Axis a1, Axis a2, int faceValue)
+        private static void SetFace(ref short value, Axis a1, Axis a2, byte faceValue)
         {
-            int a = (int)a1 + (int)a2 - 1;
-            var p = (int)Math.Pow(10, a);
-            value -= (value / p) % 10 * p;
-            value += faceValue * p;
+            var a = (short)(a1 + (short)a2 - 1);
+            var p = (short)Math.Pow(10, a);
+            value -= (short)((value / p) % 10 * p);
+            value += (short)(faceValue * p);
         }
 
         public Cubelet Transform(Axis a1, Axis a2)
         {
-            var a = (Axis)(3 - (int)a1 - (int)a2);
+            var a = (Axis)(3 - a1 - a2);
 
-            int value = Value;
+            var value = Value;
             SetFace(ref value, a, a1, this[a, a2]);
             SetFace(ref value, a, a2, this[a, a1]);
 
@@ -130,7 +130,7 @@ namespace RubiksCube
         {
             unchecked
             {
-                int hash = 17;
+                var hash = 17;
                 hash = hash * 23 + Location.GetHashCode();
                 hash = hash * 23 + Value.GetHashCode();
                 return hash;
@@ -147,20 +147,20 @@ namespace RubiksCube
 
         public IEnumerable<Cubelet> Transform(Axis a1, Axis a2, bool? side = null)
         {
-            var a = (Axis)(3 - (int)a1 - (int)a2);
+            var a = (Axis)(3 - a1 - a2);
             return cubelets.Select(c => !side.HasValue || c.Location[a] == side ? c.Transform(a1, a2) : c);
         }
 
         public IEnumerable<Cubelet> GetSide(Axis a1, Axis a2, bool side)
         {
-            var a = (Axis)(3 - (int)a1 - (int)a2);
+            var a = (Axis)(3 - a1 - a2);
             return cubelets.Where(c => c.Location[a] == side);
         }
 
         private static IEnumerable<Tuple<Axis, Axis, bool>> Moves()
         {
-            for (int a1 = 0; a1 < 3; a1++)
-                for (int a2 = 0; a2 < 3; a2++)
+            for (byte a1 = 0; a1 < 3; a1++)
+                for (byte a2 = 0; a2 < 3; a2++)
                 {
                     if (a1 == a2) continue;
                     yield return Tuple.Create((Axis)a1, (Axis)a2, false);
@@ -177,7 +177,7 @@ namespace RubiksCube
         {
             cubelets = new Cubelet[8];
 
-            for (int i = 0; i < 8; i++)
+            for (byte i = 0; i < 8; i++)
                 cubelets[i] = new Cubelet(i);
 
             var random = new Random();
@@ -214,8 +214,8 @@ namespace RubiksCube
 
         public IEnumerable<Cube> Next()
         {
-            for (int a1 = 0; a1 < 3; a1++)
-                for (int a2 = 0; a2 < 3; a2++)
+            for (byte a1 = 0; a1 < 3; a1++)
+                for (byte a2 = 0; a2 < 3; a2++)
                 {
                     if (a1 == a2) continue;
 
@@ -224,9 +224,9 @@ namespace RubiksCube
                 }
         }
 
-        public int[,] GetFace(Axis a1, Axis a2, bool side, bool flip1 = false, bool flip2 = false)
+        public byte[,] GetFace(Axis a1, Axis a2, bool side, bool flip1 = false, bool flip2 = false)
         {
-            var result = new int[2, 2];
+            var result = new byte[2, 2];
 
             foreach (var c in Cubelets.GetSide(a1, a2, side))
             {
